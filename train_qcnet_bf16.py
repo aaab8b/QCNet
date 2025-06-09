@@ -20,6 +20,29 @@ from pytorch_lightning.strategies import DDPStrategy
 import torch
 from datamodules import ArgoverseV2DataModule
 from predictors import QCNet
+import torch.nn as nn
+from torch.amp import autocast
+
+# v2
+def convert_conv_linear_to_bf16(module: nn.Module,exclude_module:list):
+    for name, submodule in module.named_children():
+        if name in exclude_module:
+            print("{} is excluded from converting to bf16.".format(name))
+            continue
+        if isinstance(submodule, (nn.Conv2d, nn.Linear)):
+            if hasattr(submodule, '_original_forward'):
+                continue
+            submodule._original_forward = submodule.forward
+            def new_forward(m):
+                def forward_hooked(x):
+                    with autocast('cuda', dtype=torch.bfloat16):
+                        return m._original_forward(x).to(torch.float32)
+                return forward_hooked
+            submodule.forward = new_forward(submodule)
+        else:
+            convert_conv_linear_to_bf16(submodule,exclude_module)
+    return module
+
 
 if __name__ == '__main__':
     pl.seed_everything(2023, workers=True)
@@ -49,6 +72,12 @@ if __name__ == '__main__':
     datamodule = {
         'argoverse_v2': ArgoverseV2DataModule,
     }[args.dataset](**vars(args))
+    exclude_module=["encoder","t2m_propose_attn_layers","pl2m_propose_attn_layers","a2m_propose_attn_layers",
+    "m2m_propose_attn_layer","t2m_refine_attn_layers","pl2m_refine_attn_layers","a2m_refine_attn_layers","m2m_refine_attn_layer"]
+    print("exclude bf16 module:{}".format(exclude_module))
+    convert_conv_linear_to_bf16(model,exclude_module)
+    model=model = model.to(memory_format=torch.channels_last)
+
     model_checkpoint = ModelCheckpoint(monitor='val_minFDE', save_top_k=5, mode='min')
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
     trainer = pl.Trainer(accelerator=args.accelerator, devices=args.devices,

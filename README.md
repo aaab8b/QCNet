@@ -4,6 +4,20 @@
 
 This repository is the official implementation of the [CVPR 2023](https://cvpr2023.thecvf.com/) paper: [Query-Centric Trajectory Prediction](https://openaccess.thecvf.com/content/CVPR2023/papers/Zhou_Query-Centric_Trajectory_Prediction_CVPR_2023_paper.pdf).
 
+# Rocm version of QCNet:
+
+1.Use the official Rocm Docker.
+
+2. Install [pyg-rocm](https://github.com/Looong01/pyg-rocm-build/) via pip.
+
+3. pip3 install pytorch-lightning.
+
+4. Prepare the data like original QCNet.
+
+5. To run original fp32 training: python train_qcnet.py --root ./data/ --train_batch_size 4 --val_batch_size 4 --test_batch_size 4 --devices 8 --dataset argoverse_v2 --num_historical_steps 50 --num_future_steps 60 --num_recurrent_steps 3 --pl2pl_radius 150 --time_span 10 --pl2a_radius 50 --a2a_radius 50 --num_t2m_steps 30 --pl2m_radius 150 --a2m_radius 150 --num_workers 8
+
+6. To run modified bf16 training:  python train_qcnet_bf16.py --root ./data/ --train_batch_size 4 --val_batch_size 4 --test_batch_size 4 --devices 8 --dataset argoverse_v2 --num_historical_steps 50 --num_future_steps 60 --num_recurrent_steps 3 --pl2pl_radius 150 --time_span 10 --pl2a_radius 50 --a2a_radius 50 --num_t2m_steps 30 --pl2m_radius 150 --a2m_radius 150 --num_workers 8
+
 **Authors**: [Zikang Zhou](https://zikangzhou.github.io/), [Jianping Wang](https://scholars.cityu.edu.hk/en/persons/jianping-wang(0ff9fbf8-eeb5-4061-bcaf-029e3f282463).html), [Yung-Hui Li](https://www.linkedin.com/in/yung-hui-li-8a363120/?originalSubdomain=tw), [Yu-Kai Huang](https://www.linkedin.com/in/yu-kai-huang-135a2691/?originalSubdomain=tw)
 
 **Rank 1st** on [Argoverse 1 Single-Agent Motion Forecasting Benchmark](https://eval.ai/web/challenges/challenge-page/454/leaderboard/1279)  
